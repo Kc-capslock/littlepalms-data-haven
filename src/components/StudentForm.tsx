@@ -206,7 +206,7 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
               <SelectValue placeholder="Select a class" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Unassigned</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
               {availableClasses.map(cls => (
                 <SelectItem key={cls.id} value={cls.name}>
                   {cls.name}
