@@ -32,7 +32,9 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
     emergencyContact: '',
     enrollmentDate: '',
     class: '',
-    notes: ''
+    notes: '',
+    feesPaid: 0,
+    totalFees: 0
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof Student, string>>>({});
@@ -54,6 +56,23 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when field is modified
+    if (errors[name as keyof Student]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    // Remove non-numeric characters except '.'
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    
+    // Parse as float
+    const floatValue = parseFloat(numericValue) || 0;
+    
+    setFormData(prev => ({ ...prev, [name]: floatValue }));
     
     // Clear error when field is modified
     if (errors[name as keyof Student]) {
@@ -196,6 +215,34 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
             type="date"
             value={formData.enrollmentDate || ""}
             onChange={handleChange}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="totalFees">Total Fees ($)</Label>
+          <Input
+            id="totalFees"
+            name="totalFees"
+            type="number"
+            min="0"
+            step="0.01"
+            value={formData.totalFees || 0}
+            onChange={handleNumberChange}
+            placeholder="Enter total fees"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="feesPaid">Fees Paid ($)</Label>
+          <Input
+            id="feesPaid"
+            name="feesPaid"
+            type="number"
+            min="0"
+            step="0.01"
+            value={formData.feesPaid || 0}
+            onChange={handleNumberChange}
+            placeholder="Enter fees paid"
           />
         </div>
         

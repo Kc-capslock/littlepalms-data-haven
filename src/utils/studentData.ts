@@ -1,4 +1,3 @@
-
 export interface Student {
   id: string;
   name: string;
@@ -11,6 +10,8 @@ export interface Student {
   enrollmentDate?: string;
   class?: string;
   notes?: string;
+  feesPaid?: number;
+  totalFees?: number;
 }
 
 export interface Class {

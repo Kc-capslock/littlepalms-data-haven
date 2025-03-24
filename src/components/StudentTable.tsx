@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, DollarSign } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Student } from '@/utils/studentData';
@@ -34,6 +34,12 @@ const StudentTable = ({ students, onEdit, onDelete }: StudentTableProps) => {
     }
   };
 
+  const calculateBalance = (paid?: number, total?: number): number => {
+    const paidAmount = paid || 0;
+    const totalAmount = total || 0;
+    return totalAmount - paidAmount;
+  };
+
   return (
     <>
       <div className="rounded-md border shadow-sm overflow-hidden animate-fadeIn">
@@ -45,13 +51,16 @@ const StudentTable = ({ students, onEdit, onDelete }: StudentTableProps) => {
               <TableHead>Contact</TableHead>
               <TableHead>Date of Birth</TableHead>
               <TableHead className="w-[80px]">Class</TableHead>
+              <TableHead className="text-right">Fees Paid</TableHead>
+              <TableHead className="text-right">Total Fees</TableHead>
+              <TableHead className="text-right">Balance</TableHead>
               <TableHead className="text-right w-[120px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {students.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center p-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center p-8 text-muted-foreground">
                   No students found
                 </TableCell>
               </TableRow>
@@ -70,6 +79,11 @@ const StudentTable = ({ students, onEdit, onDelete }: StudentTableProps) => {
                   <TableCell>{student.contactNumber}</TableCell>
                   <TableCell>{formatDate(student.dateOfBirth)}</TableCell>
                   <TableCell>{student.class || '-'}</TableCell>
+                  <TableCell className="text-right">{student.feesPaid ? `$${student.feesPaid.toFixed(2)}` : '-'}</TableCell>
+                  <TableCell className="text-right">{student.totalFees ? `$${student.totalFees.toFixed(2)}` : '-'}</TableCell>
+                  <TableCell className={`text-right ${calculateBalance(student.feesPaid, student.totalFees) > 0 ? 'text-red-500' : ''}`}>
+                    {student.totalFees ? `$${calculateBalance(student.feesPaid, student.totalFees).toFixed(2)}` : '-'}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
@@ -157,6 +171,20 @@ const StudentTable = ({ students, onEdit, onDelete }: StudentTableProps) => {
                   <span className="col-span-3">{selectedStudent.class}</span>
                 </div>
               )}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-medium">Fees Paid:</span>
+                <span className="col-span-3">{selectedStudent.feesPaid ? `$${selectedStudent.feesPaid.toFixed(2)}` : '-'}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-medium">Total Fees:</span>
+                <span className="col-span-3">{selectedStudent.totalFees ? `$${selectedStudent.totalFees.toFixed(2)}` : '-'}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-medium">Balance:</span>
+                <span className={`col-span-3 ${calculateBalance(selectedStudent.feesPaid, selectedStudent.totalFees) > 0 ? 'text-red-500' : ''}`}>
+                  {selectedStudent.totalFees ? `$${calculateBalance(selectedStudent.feesPaid, selectedStudent.totalFees).toFixed(2)}` : '-'}
+                </span>
+              </div>
               {selectedStudent.notes && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <span className="text-right font-medium">Notes:</span>
