@@ -1,7 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PlusCircle, Users, List, Grid3X3 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -29,10 +29,18 @@ const Index = () => {
 
   useEffect(() => {
     initializeWithSampleData();
+    refreshStudentData();
+  }, []);
+
+  const refreshStudentData = () => {
     const loadedStudents = getAllStudents();
     setStudents(loadedStudents);
-    setFilteredStudents(loadedStudents);
-  }, []);
+    if (searchQuery.trim()) {
+      setFilteredStudents(searchStudents(searchQuery));
+    } else {
+      setFilteredStudents(loadedStudents);
+    }
+  };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -45,30 +53,46 @@ const Index = () => {
   };
 
   const handleAddStudent = (studentData: Student) => {
-    const newStudent = { ...studentData };
-    
-    if (editingStudent) {
-      const updated = updateStudent(editingStudent.id, newStudent);
-      if (updated) {
-        setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
-        setFilteredStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
-        toast.success("Student updated successfully");
+    try {
+      if (editingStudent) {
+        // Update existing student
+        const updated = updateStudent(editingStudent.id, studentData);
+        if (updated) {
+          toast.success("Student updated successfully");
+          refreshStudentData();
+        } else {
+          toast.error("Failed to update student");
+        }
+      } else {
+        // Add new student
+        const newStudent = addStudent(studentData);
+        if (newStudent) {
+          toast.success("Student added successfully");
+          refreshStudentData();
+        } else {
+          toast.error("Failed to add student");
+        }
       }
-    } else {
-      addStudent(newStudent);
-      setStudents(getAllStudents());
-      setFilteredStudents(getAllStudents());
-      toast.success("Student added successfully");
+      
+      setIsFormOpen(false);
+      setEditingStudent(undefined);
+    } catch (error) {
+      console.error("Error saving student:", error);
+      toast.error("An error occurred while saving the student data");
     }
-    
-    setIsFormOpen(false);
-    setEditingStudent(undefined);
   };
 
   const handleDeleteStudent = (id: string) => {
-    if (deleteStudent(id)) {
-      setStudents(prev => prev.filter(s => s.id !== id));
-      setFilteredStudents(prev => prev.filter(s => s.id !== id));
+    try {
+      if (deleteStudent(id)) {
+        toast.success("Student deleted successfully");
+        refreshStudentData();
+      } else {
+        toast.error("Failed to delete student");
+      }
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      toast.error("An error occurred while deleting the student");
     }
   };
 
@@ -199,7 +223,12 @@ const Index = () => {
         )}
       </main>
       
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={(open) => {
+        if (!open) {
+          setEditingStudent(undefined);
+        }
+        setIsFormOpen(open);
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingStudent ? 'Edit Student' : 'Add New Student'}</DialogTitle>

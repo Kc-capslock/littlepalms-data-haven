@@ -26,6 +26,7 @@ const StudentTable = ({ students, onEdit, onDelete }: StudentTableProps) => {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
     try {
       return format(new Date(dateString), 'MMM d, yyyy');
     } catch (e) {
@@ -62,7 +63,7 @@ const StudentTable = ({ students, onEdit, onDelete }: StudentTableProps) => {
                     setSelectedStudent(student);
                     setShowDetails(true);
                   }}
-                  className="cursor-pointer hover:bg-muted/50 subtle-transition"
+                  className="cursor-pointer hover:bg-muted/50"
                 >
                   <TableCell className="font-medium">{student.id}</TableCell>
                   <TableCell>{student.name}</TableCell>

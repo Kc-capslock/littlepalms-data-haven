@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Student } from '@/utils/studentData';
 import { generateId } from '@/utils/studentData';
+import { toast } from 'sonner';
 
 interface StudentFormProps {
   student?: Student;
@@ -73,6 +74,9 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
     
     if (validate()) {
       onSubmit(formData);
+      toast.success(student ? "Student updated successfully" : "Student added successfully");
+    } else {
+      toast.error("Please fill in all required fields");
     }
   };
 
