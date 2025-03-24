@@ -1,0 +1,425 @@
+
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { format, parse } from 'date-fns';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  FeeEntry, 
+  MonthlyFee, 
+  Deposit, 
+  getFeeEntryByStudentId, 
+  updateFeeEntry, 
+  addMonthlyFee, 
+  addDeposit, 
+  calculateTotalFees, 
+  calculateTotalDeposits, 
+  calculateDues,
+  initializeFeeEntry,
+  generateId
+} from '@/utils/studentData';
+import { CalendarIcon, CheckCircle, XCircle, PlusCircle, Receipt, Save } from 'lucide-react';
+
+interface FeesModalProps {
+  studentId: string;
+  studentName: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProps) => {
+  const [feeData, setFeeData] = useState<FeeEntry | null>(null);
+  const [newMonthlyFee, setNewMonthlyFee] = useState({
+    month: format(new Date(), 'yyyy-MM'),
+    amount: 0
+  });
+  const [newDeposit, setNewDeposit] = useState({
+    amount: 0,
+    date: format(new Date(), 'yyyy-MM-dd'),
+    remarks: ''
+  });
+  const [activeTab, setActiveTab] = useState('fees');
+
+  const refreshFeeData = () => {
+    const data = getFeeEntryByStudentId(studentId);
+    if (data) {
+      setFeeData(data);
+    } else {
+      const newData = initializeFeeEntry(studentId);
+      setFeeData(newData);
+    }
+  };
+
+  useEffect(() => {
+    if (open && studentId) {
+      refreshFeeData();
+    }
+  }, [studentId, open]);
+
+  const handleSaveOneTimeFees = () => {
+    if (!feeData) return;
+    
+    updateFeeEntry(studentId, {
+      registrationFee: feeData.registrationFee,
+      admissionFee: feeData.admissionFee,
+      annualCharges: feeData.annualCharges
+    });
+    
+    toast.success('Fees updated successfully');
+    refreshFeeData();
+  };
+
+  const handleAddMonthlyFee = () => {
+    if (!newMonthlyFee.month || newMonthlyFee.amount <= 0) {
+      toast.error('Please provide valid month and amount');
+      return;
+    }
+    
+    const result = addMonthlyFee(studentId, newMonthlyFee.month, newMonthlyFee.amount);
+    
+    if (result) {
+      toast.success('Monthly fee added successfully');
+      setNewMonthlyFee({
+        month: format(new Date(), 'yyyy-MM'),
+        amount: 0
+      });
+      refreshFeeData();
+    } else {
+      toast.error('Failed to add monthly fee');
+    }
+  };
+
+  const handleAddDeposit = () => {
+    if (newDeposit.amount <= 0 || !newDeposit.date) {
+      toast.error('Please provide valid amount and date');
+      return;
+    }
+    
+    const result = addDeposit(
+      studentId, 
+      newDeposit.amount, 
+      newDeposit.date, 
+      newDeposit.remarks
+    );
+    
+    if (result) {
+      toast.success('Deposit added successfully');
+      setNewDeposit({
+        amount: 0,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        remarks: ''
+      });
+      refreshFeeData();
+    } else {
+      toast.error('Failed to add deposit');
+    }
+  };
+
+  const handleFeeInputChange = (field: keyof FeeEntry, value: number) => {
+    if (!feeData) return;
+    
+    setFeeData(prev => {
+      if (!prev) return prev;
+      return { ...prev, [field]: value };
+    });
+  };
+
+  const formatMonthName = (monthStr: string) => {
+    try {
+      return format(parse(monthStr, 'yyyy-MM', new Date()), 'MMMM yyyy');
+    } catch (e) {
+      return monthStr;
+    }
+  };
+
+  // Calculate totals
+  const totalOneTimeFees = feeData 
+    ? feeData.registrationFee + feeData.admissionFee + feeData.annualCharges 
+    : 0;
+  
+  const totalMonthlyFees = feeData
+    ? feeData.monthlyFees.reduce((sum, fee) => sum + fee.amount, 0)
+    : 0;
+  
+  const grandTotal = totalOneTimeFees + totalMonthlyFees;
+  
+  const totalDeposits = feeData
+    ? feeData.deposits.reduce((sum, deposit) => sum + deposit.amount, 0)
+    : 0;
+  
+  const duesAmount = grandTotal - totalDeposits;
+
+  const toggleMonthlyFeePaid = (monthlyFeeId: string) => {
+    if (!feeData) return;
+    
+    const updatedMonthlyFees = feeData.monthlyFees.map(fee => {
+      if (fee.id === monthlyFeeId) {
+        return { ...fee, paid: !fee.paid };
+      }
+      return fee;
+    });
+    
+    updateFeeEntry(studentId, { monthlyFees: updatedMonthlyFees });
+    refreshFeeData();
+  };
+
+  if (!feeData) return null;
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full md:max-w-[800px] sm:max-w-full overflow-y-auto">
+        <SheetHeader className="mb-4">
+          <SheetTitle>Fees Statement</SheetTitle>
+          <SheetDescription>
+            Student: {studentName} (ID: {studentId})
+          </SheetDescription>
+        </SheetHeader>
+
+        <Tabs defaultValue="fees" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="fees">Fee Details</TabsTrigger>
+            <TabsTrigger value="deposits">Deposits</TabsTrigger>
+            <TabsTrigger value="summary">Summary</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="fees" className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">One-Time Fees</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="registrationFee">Registration Fee</Label>
+                  <Input
+                    id="registrationFee"
+                    type="number"
+                    min="0"
+                    value={feeData.registrationFee}
+                    onChange={(e) => handleFeeInputChange('registrationFee', Number(e.target.value))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admissionFee">Admission Fee</Label>
+                  <Input
+                    id="admissionFee"
+                    type="number"
+                    min="0"
+                    value={feeData.admissionFee}
+                    onChange={(e) => handleFeeInputChange('admissionFee', Number(e.target.value))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="annualCharges">Annual Charges</Label>
+                  <Input
+                    id="annualCharges"
+                    type="number"
+                    min="0"
+                    value={feeData.annualCharges}
+                    onChange={(e) => handleFeeInputChange('annualCharges', Number(e.target.value))}
+                  />
+                </div>
+              </div>
+              <Button onClick={handleSaveOneTimeFees}>
+                <Save className="h-4 w-4 mr-2" />
+                Save One-Time Fees
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Monthly Fees</h3>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="month"
+                    className="w-40"
+                    value={newMonthlyFee.month}
+                    onChange={(e) => setNewMonthlyFee({...newMonthlyFee, month: e.target.value})}
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Amount"
+                    className="w-32"
+                    value={newMonthlyFee.amount || ''}
+                    onChange={(e) => setNewMonthlyFee({...newMonthlyFee, amount: Number(e.target.value)})}
+                  />
+                  <Button size="sm" onClick={handleAddMonthlyFee}>
+                    <PlusCircle className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Month</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {feeData.monthlyFees.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
+                          No monthly fees added yet
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      feeData.monthlyFees
+                        .sort((a, b) => a.month.localeCompare(b.month))
+                        .map((fee) => (
+                          <TableRow key={fee.id}>
+                            <TableCell>{formatMonthName(fee.month)}</TableCell>
+                            <TableCell className="text-right">${fee.amount.toFixed(2)}</TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleMonthlyFeePaid(fee.id)}
+                                className={fee.paid ? "text-green-500" : "text-red-500"}
+                              >
+                                {fee.paid ? <CheckCircle className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    )}
+                    <TableRow className="bg-muted/50">
+                      <TableCell className="font-medium">Total Monthly Fees</TableCell>
+                      <TableCell className="text-right font-medium">${totalMonthlyFees.toFixed(2)}</TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="deposits" className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Deposits</h3>
+                <div className="flex flex-col md:flex-row gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Amount"
+                    className="w-full md:w-32"
+                    value={newDeposit.amount || ''}
+                    onChange={(e) => setNewDeposit({...newDeposit, amount: Number(e.target.value)})}
+                  />
+                  <Input
+                    type="date"
+                    className="w-full md:w-40"
+                    value={newDeposit.date}
+                    onChange={(e) => setNewDeposit({...newDeposit, date: e.target.value})}
+                  />
+                  <Input
+                    placeholder="Remarks"
+                    className="w-full md:w-40"
+                    value={newDeposit.remarks}
+                    onChange={(e) => setNewDeposit({...newDeposit, remarks: e.target.value})}
+                  />
+                  <Button size="sm" onClick={handleAddDeposit}>
+                    <PlusCircle className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Remarks</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {feeData.deposits.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
+                          No deposits recorded yet
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      feeData.deposits
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((deposit) => (
+                          <TableRow key={deposit.id}>
+                            <TableCell>
+                              {format(new Date(deposit.date), 'MMM d, yyyy')}
+                            </TableCell>
+                            <TableCell className="text-right">${deposit.amount.toFixed(2)}</TableCell>
+                            <TableCell>{deposit.remarks || '-'}</TableCell>
+                          </TableRow>
+                        ))
+                    )}
+                    <TableRow className="bg-muted/50">
+                      <TableCell className="font-medium">Total Deposits</TableCell>
+                      <TableCell className="text-right font-medium">${totalDeposits.toFixed(2)}</TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="summary" className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Fee Summary</h3>
+              <div className="border rounded-md p-4 space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="font-medium">Registration Fee:</div>
+                  <div className="text-right">${feeData.registrationFee.toFixed(2)}</div>
+                  
+                  <div className="font-medium">Admission Fee:</div>
+                  <div className="text-right">${feeData.admissionFee.toFixed(2)}</div>
+                  
+                  <div className="font-medium">Annual Charges:</div>
+                  <div className="text-right">${feeData.annualCharges.toFixed(2)}</div>
+                  
+                  <div className="font-medium">Total One-Time Fees:</div>
+                  <div className="text-right">${totalOneTimeFees.toFixed(2)}</div>
+                  
+                  <div className="font-medium pt-2 border-t">Total Monthly Fees:</div>
+                  <div className="text-right pt-2 border-t">${totalMonthlyFees.toFixed(2)}</div>
+                  
+                  <div className="font-medium text-lg pt-2 border-t">Grand Total:</div>
+                  <div className="text-right text-lg font-bold pt-2 border-t">${grandTotal.toFixed(2)}</div>
+                  
+                  <div className="font-medium pt-2 border-t">Total Deposits:</div>
+                  <div className="text-right pt-2 border-t">${totalDeposits.toFixed(2)}</div>
+                  
+                  <div className="font-medium text-lg pt-2 border-t">Dues:</div>
+                  <div className={`text-right text-lg font-bold pt-2 border-t ${duesAmount > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                    ${duesAmount.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        <SheetFooter className="mt-6">
+          <Button onClick={() => onOpenChange(false)}>Close</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+export default FeesModal;

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from 'sonner';
 import { Student } from '@/utils/studentData';
 import { format } from 'date-fns';
+import FeesModal from './FeesModal';
 
 interface StudentCardProps {
   student: Student;
@@ -17,6 +18,7 @@ interface StudentCardProps {
 
 const StudentCard = ({ student, onEdit, onDelete }: StudentCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [showFeesModal, setShowFeesModal] = useState(false);
   
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this student record?")) {
@@ -33,13 +35,6 @@ const StudentCard = ({ student, onEdit, onDelete }: StudentCardProps) => {
       return student.dateOfBirth;
     }
   })();
-
-  // Calculate balance
-  const calculateBalance = (): number => {
-    const paidAmount = student.feesPaid || 0;
-    const totalAmount = student.totalFees || 0;
-    return totalAmount - paidAmount;
-  };
 
   return (
     <Card className="overflow-hidden hover-scale glass-card animate-fadeIn">
@@ -85,16 +80,18 @@ const StudentCard = ({ student, onEdit, onDelete }: StudentCardProps) => {
               <span className="font-medium">Class:</span> <span className="ml-1">{student.class}</span>
             </div>
           )}
-          <div className="flex items-center text-sm text-muted-foreground">
-            <DollarSign className="mr-2 h-4 w-4" />
-            <span className="font-medium">Balance:</span> 
-            <span className={`ml-1 ${calculateBalance() > 0 ? 'text-red-500' : ''}`}>
-              ${calculateBalance().toFixed(2)}
-            </span>
-          </div>
         </div>
       </CardContent>
-      <CardFooter className="pt-0">
+      <CardFooter className="pt-0 flex flex-col space-y-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full"
+          onClick={() => setShowFeesModal(true)}
+        >
+          <DollarSign className="mr-2 h-4 w-4" />
+          Fees
+        </Button>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="w-full">
@@ -151,20 +148,6 @@ const StudentCard = ({ student, onEdit, onDelete }: StudentCardProps) => {
                   <span className="col-span-3">{student.class}</span>
                 </div>
               )}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="text-right font-medium">Fees Paid:</span>
-                <span className="col-span-3">${(student.feesPaid || 0).toFixed(2)}</span>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="text-right font-medium">Total Fees:</span>
-                <span className="col-span-3">${(student.totalFees || 0).toFixed(2)}</span>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="text-right font-medium">Balance:</span>
-                <span className={`col-span-3 ${calculateBalance() > 0 ? 'text-red-500' : ''}`}>
-                  ${calculateBalance().toFixed(2)}
-                </span>
-              </div>
               {student.notes && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <span className="text-right font-medium">Notes:</span>
@@ -178,6 +161,13 @@ const StudentCard = ({ student, onEdit, onDelete }: StudentCardProps) => {
           </DialogContent>
         </Dialog>
       </CardFooter>
+
+      <FeesModal
+        studentId={student.id}
+        studentName={student.name}
+        open={showFeesModal}
+        onOpenChange={setShowFeesModal}
+      />
     </Card>
   );
 };
