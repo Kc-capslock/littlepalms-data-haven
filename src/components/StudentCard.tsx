@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { MoreHorizontal, User, Phone, Calendar, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, User, Phone, Calendar, Edit, Trash2, UserCheck } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -72,6 +72,12 @@ const StudentCard = ({ student, onEdit, onDelete }: StudentCardProps) => {
             <Calendar className="mr-2 h-4 w-4" />
             <span className="font-medium">DOB:</span> <span className="ml-1">{formattedDob}</span>
           </div>
+          {student.class && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <UserCheck className="mr-2 h-4 w-4" />
+              <span className="font-medium">Class:</span> <span className="ml-1">{student.class}</span>
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter className="pt-0">
@@ -95,16 +101,22 @@ const StudentCard = ({ student, onEdit, onDelete }: StudentCardProps) => {
                 <span className="text-right font-medium">Contact:</span>
                 <span className="col-span-3">{student.contactNumber}</span>
               </div>
+              {student.fatherName && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-right font-medium">Father's Name:</span>
+                  <span className="col-span-3">{student.fatherName}</span>
+                </div>
+              )}
+              {student.motherName && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-right font-medium">Mother's Name:</span>
+                  <span className="col-span-3">{student.motherName}</span>
+                </div>
+              )}
               {student.address && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <span className="text-right font-medium">Address:</span>
                   <span className="col-span-3">{student.address}</span>
-                </div>
-              )}
-              {student.parentName && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <span className="text-right font-medium">Parent:</span>
-                  <span className="col-span-3">{student.parentName}</span>
                 </div>
               )}
               {student.emergencyContact && (

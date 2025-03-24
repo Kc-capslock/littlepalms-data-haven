@@ -4,8 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Student } from '@/utils/studentData';
-import { generateId } from '@/utils/studentData';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from '@/components/ui/select';
+import { Student, getAllClasses, generateId } from '@/utils/studentData';
 import { toast } from 'sonner';
 
 interface StudentFormProps {
@@ -21,7 +27,8 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
     contactNumber: '',
     dateOfBirth: '',
     address: '',
-    parentName: '',
+    fatherName: '',
+    motherName: '',
     emergencyContact: '',
     enrollmentDate: '',
     class: '',
@@ -29,8 +36,12 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof Student, string>>>({});
+  const [availableClasses, setAvailableClasses] = useState<{id: string, name: string}[]>([]);
 
   useEffect(() => {
+    // Load available classes
+    setAvailableClasses(getAllClasses().map(c => ({ id: c.id, name: c.name })));
+    
     if (student) {
       // Edit mode - populate form with student data
       setFormData(student);
@@ -47,6 +58,15 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
     // Clear error when field is modified
     if (errors[name as keyof Student]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData(prev => ({ ...prev, class: value }));
+    
+    // Clear error if it exists
+    if (errors.class) {
+      setErrors(prev => ({ ...prev, class: undefined }));
     }
   };
 
@@ -136,13 +156,24 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="parentName">Parent/Guardian Name</Label>
+          <Label htmlFor="fatherName">Father's Name</Label>
           <Input
-            id="parentName"
-            name="parentName"
-            value={formData.parentName || ""}
+            id="fatherName"
+            name="fatherName"
+            value={formData.fatherName || ""}
             onChange={handleChange}
-            placeholder="Enter parent name"
+            placeholder="Enter father's name"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="motherName">Mother's Name</Label>
+          <Input
+            id="motherName"
+            name="motherName"
+            value={formData.motherName || ""}
+            onChange={handleChange}
+            placeholder="Enter mother's name"
           />
         </div>
         
@@ -158,17 +189,6 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="class">Class</Label>
-          <Input
-            id="class"
-            name="class"
-            value={formData.class || ""}
-            onChange={handleChange}
-            placeholder="Enter class name"
-          />
-        </div>
-        
-        <div className="space-y-2">
           <Label htmlFor="enrollmentDate">Enrollment Date</Label>
           <Input
             id="enrollmentDate"
@@ -177,6 +197,23 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
             value={formData.enrollmentDate || ""}
             onChange={handleChange}
           />
+        </div>
+        
+        <div className="space-y-2 col-span-2">
+          <Label htmlFor="class">Class</Label>
+          <Select value={formData.class || ""} onValueChange={handleSelectChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a class" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Unassigned</SelectItem>
+              {availableClasses.map(cls => (
+                <SelectItem key={cls.id} value={cls.name}>
+                  {cls.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       

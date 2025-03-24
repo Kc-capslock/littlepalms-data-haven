@@ -121,16 +121,22 @@ const StudentTable = ({ students, onEdit, onDelete }: StudentTableProps) => {
                 <span className="text-right font-medium">Contact:</span>
                 <span className="col-span-3">{selectedStudent.contactNumber}</span>
               </div>
+              {selectedStudent.fatherName && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-right font-medium">Father's Name:</span>
+                  <span className="col-span-3">{selectedStudent.fatherName}</span>
+                </div>
+              )}
+              {selectedStudent.motherName && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-right font-medium">Mother's Name:</span>
+                  <span className="col-span-3">{selectedStudent.motherName}</span>
+                </div>
+              )}
               {selectedStudent.address && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <span className="text-right font-medium">Address:</span>
                   <span className="col-span-3">{selectedStudent.address}</span>
-                </div>
-              )}
-              {selectedStudent.parentName && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <span className="text-right font-medium">Parent:</span>
-                  <span className="col-span-3">{selectedStudent.parentName}</span>
                 </div>
               )}
               {selectedStudent.emergencyContact && (
