@@ -46,6 +46,30 @@ const Login = () => {
     }
   };
 
+  // Handle password-only submission
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isAdmin(password)) {
+      // Create a minimal user object if not authenticated via Google
+      if (!isAuthenticated) {
+        login({
+          email: "admin@littlepalms.edu",
+          name: "Administrator",
+          picture: "/logo-placeholder.png",
+          sub: "password-auth"
+        });
+      }
+      
+      setAdminStatus(true);
+      toast.success("Welcome back, Administrator!");
+      navigate("/");
+    } else {
+      setLoginError("Incorrect administrator password. Please try again.");
+      toast.error("Incorrect administrator password. Please try again.");
+    }
+  };
+
   // Display a reminder about setting up the Google Client ID
   useEffect(() => {
     toast.info(
@@ -72,7 +96,7 @@ const Login = () => {
             }}
           />
           
-          <div className="w-full space-y-4">
+          <form onSubmit={handlePasswordSubmit} className="w-full space-y-4">
             {loginError && (
               <div className="p-3 bg-red-100 border border-red-300 rounded-md text-red-700 text-sm">
                 {loginError}
@@ -93,11 +117,15 @@ const Login = () => {
               />
             </div>
             
+            <Button type="submit" className="w-full">
+              Sign In with Password
+            </Button>
+            
             <div className="relative flex justify-center">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-gray-300" />
               </div>
-              <div className="relative px-4 text-sm font-medium text-gray-500 bg-white">Continue with</div>
+              <div className="relative px-4 text-sm font-medium text-gray-500 bg-white">Or continue with</div>
             </div>
             
             <div className="flex justify-center">
@@ -110,7 +138,7 @@ const Login = () => {
                 useOneTap
               />
             </div>
-          </div>
+          </form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-gray-500">
           Administrator access requires password
