@@ -24,9 +24,19 @@ export const useAuth = () => {
     setUser(null);
   };
 
-  const isAdmin = () => {
-    return user?.email === "kcc060309@gmail.com";
+  const isAdmin = (password?: string) => {
+    if (password) {
+      return password === "HarpreetGarten69";
+    }
+    
+    // Check if admin status is already saved in localStorage
+    const isAdminSaved = localStorage.getItem("littlePalms_isAdmin");
+    return isAdminSaved === "true";
   };
 
-  return { user, login, logout, isAuthenticated: !!user, isAdmin };
+  const setAdminStatus = (status: boolean) => {
+    localStorage.setItem("littlePalms_isAdmin", status ? "true" : "false");
+  };
+
+  return { user, login, logout, isAuthenticated: !!user, isAdmin, setAdminStatus };
 };

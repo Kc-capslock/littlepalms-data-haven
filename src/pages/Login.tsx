@@ -5,16 +5,18 @@ import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated, isAdmin } = useAuth();
+  const { login, isAuthenticated, isAdmin, setAdminStatus } = useAuth();
+  const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && isAdmin()) {
       navigate("/");
     }
   }, [isAuthenticated, navigate]);
@@ -23,21 +25,21 @@ const Login = () => {
     try {
       const decoded = jwtDecode(credentialResponse.credential) as any;
       
-      // Check if the email is the admin email
-      if (decoded.email !== "kcc060309@gmail.com") {
-        setLoginError("Access restricted. Only administrators can log in.");
-        toast.error("Access restricted. Only administrators can log in.");
-        return;
-      }
-      
       login({
         email: decoded.email,
         name: decoded.name,
         picture: decoded.picture,
         sub: decoded.sub
       });
-      toast.success(`Welcome back, ${decoded.name}!`);
-      navigate("/");
+      
+      if (isAdmin(password)) {
+        setAdminStatus(true);
+        toast.success(`Welcome back, ${decoded.name}!`);
+        navigate("/");
+      } else {
+        setLoginError("Incorrect administrator password. Please try again.");
+        toast.error("Incorrect administrator password. Please try again.");
+      }
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Login failed. Please try again.");
@@ -77,6 +79,20 @@ const Login = () => {
               </div>
             )}
             
+            <div className="w-full">
+              <label htmlFor="password" className="text-sm font-medium">
+                Administrator Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter administrator password"
+                className="mt-1"
+              />
+            </div>
+            
             <div className="relative flex justify-center">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-gray-300" />
@@ -97,7 +113,7 @@ const Login = () => {
           </div>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-gray-500">
-          Administrator access only (<strong>kcc060309@gmail.com</strong>)
+          Administrator access requires password
         </CardFooter>
       </Card>
     </div>
