@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format, parse } from 'date-fns';
@@ -61,6 +62,8 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
   const [activeTab, setActiveTab] = useState('fees');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [depositToDelete, setDepositToDelete] = useState<string | null>(null);
+  const [monthlyFeeToDelete, setMonthlyFeeToDelete] = useState<string | null>(null);
+  const [deleteMonthlyFeeConfirmOpen, setDeleteMonthlyFeeConfirmOpen] = useState(false);
 
   const refreshFeeData = () => {
     const data = getFeeEntryByStudentId(studentId);
@@ -142,6 +145,11 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
     setDeleteConfirmOpen(true);
   };
 
+  const handleRemoveMonthlyFee = (feeId: string) => {
+    setMonthlyFeeToDelete(feeId);
+    setDeleteMonthlyFeeConfirmOpen(true);
+  };
+
   const confirmDeleteDeposit = () => {
     if (!feeData || !depositToDelete) return;
 
@@ -153,6 +161,19 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
     
     setDeleteConfirmOpen(false);
     setDepositToDelete(null);
+  };
+
+  const confirmDeleteMonthlyFee = () => {
+    if (!feeData || !monthlyFeeToDelete) return;
+
+    const updatedMonthlyFees = feeData.monthlyFees.filter(fee => fee.id !== monthlyFeeToDelete);
+    
+    updateFeeEntry(studentId, { monthlyFees: updatedMonthlyFees });
+    toast.success('Monthly fee removed successfully');
+    refreshFeeData();
+    
+    setDeleteMonthlyFeeConfirmOpen(false);
+    setMonthlyFeeToDelete(null);
   };
 
   const handleFeeInputChange = (field: keyof FeeEntry, value: number) => {
@@ -296,12 +317,13 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
                         <TableHead>Month</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                         <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="w-20">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {feeData.monthlyFees.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
+                          <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
                             No monthly fees added yet
                           </TableCell>
                         </TableRow>
@@ -322,12 +344,23 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
                                   {fee.paid ? <CheckCircle className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
                                 </Button>
                               </TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="text-destructive hover:text-destructive-foreground"
+                                  onClick={() => handleRemoveMonthlyFee(fee.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
                             </TableRow>
                           ))
                       )}
                       <TableRow className="bg-muted/50">
                         <TableCell className="font-medium">Total Monthly Fees</TableCell>
                         <TableCell className="text-right font-medium">${totalMonthlyFees.toFixed(2)}</TableCell>
+                        <TableCell></TableCell>
                         <TableCell></TableCell>
                       </TableRow>
                     </TableBody>
@@ -462,6 +495,7 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
         </SheetContent>
       </Sheet>
 
+      {/* Delete Deposit Confirmation Dialog */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -473,6 +507,24 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDepositToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteDeposit} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Monthly Fee Confirmation Dialog */}
+      <AlertDialog open={deleteMonthlyFeeConfirmOpen} onOpenChange={setDeleteMonthlyFeeConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Monthly Fee</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this monthly fee? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setMonthlyFeeToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteMonthlyFee} className="bg-destructive text-destructive-foreground">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
