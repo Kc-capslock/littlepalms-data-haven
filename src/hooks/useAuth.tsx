@@ -24,5 +24,9 @@ export const useAuth = () => {
     setUser(null);
   };
 
-  return { user, login, logout, isAuthenticated: !!user };
+  const isAdmin = () => {
+    return user?.email === "kcc060309@gmail.com";
+  };
+
+  return { user, login, logout, isAuthenticated: !!user, isAdmin };
 };

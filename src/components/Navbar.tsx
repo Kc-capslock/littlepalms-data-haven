@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, Search } from "lucide-react";
+import { LogOut, Search, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NavbarProps {
@@ -10,7 +10,7 @@ interface NavbarProps {
 }
 
 const Navbar = ({ onSearch }: NavbarProps) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -50,7 +50,14 @@ const Navbar = ({ onSearch }: NavbarProps) => {
                   alt={user.name}
                   className="h-8 w-8 rounded-full"
                 />
-                <span className="text-sm font-medium">{user.name}</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{user.name}</span>
+                  {isAdmin() && (
+                    <span className="flex items-center text-xs text-green-600">
+                      <ShieldCheck className="mr-1 h-3 w-3" /> Admin
+                    </span>
+                  )}
+                </div>
               </div>
               <Button variant="ghost" size="icon" onClick={logout}>
                 <LogOut className="h-5 w-5" />

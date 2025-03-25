@@ -10,7 +10,8 @@ import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isAdmin } = useAuth();
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -21,6 +22,14 @@ const Login = () => {
   const handleLoginSuccess = (credentialResponse: any) => {
     try {
       const decoded = jwtDecode(credentialResponse.credential) as any;
+      
+      // Check if the email is the admin email
+      if (decoded.email !== "kcc060309@gmail.com") {
+        setLoginError("Access restricted. Only administrators can log in.");
+        toast.error("Access restricted. Only administrators can log in.");
+        return;
+      }
+      
       login({
         email: decoded.email,
         name: decoded.name,
@@ -62,6 +71,12 @@ const Login = () => {
           />
           
           <div className="w-full space-y-4">
+            {loginError && (
+              <div className="p-3 bg-red-100 border border-red-300 rounded-md text-red-700 text-sm">
+                {loginError}
+              </div>
+            )}
+            
             <div className="relative flex justify-center">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-gray-300" />
@@ -82,7 +97,7 @@ const Login = () => {
           </div>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-gray-500">
-          Administrator access only
+          Administrator access only (<strong>kcc060309@gmail.com</strong>)
         </CardFooter>
       </Card>
     </div>
