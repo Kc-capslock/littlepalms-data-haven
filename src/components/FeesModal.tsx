@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format, parse } from 'date-fns';
@@ -15,6 +14,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   FeeEntry, 
   MonthlyFee, 
@@ -29,7 +38,7 @@ import {
   initializeFeeEntry,
   generateId
 } from '@/utils/studentData';
-import { CalendarIcon, CheckCircle, XCircle, PlusCircle, Receipt, Save } from 'lucide-react';
+import { CalendarIcon, CheckCircle, XCircle, PlusCircle, Receipt, Save, Trash2 } from 'lucide-react';
 
 interface FeesModalProps {
   studentId: string;
@@ -50,6 +59,8 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
     remarks: ''
   });
   const [activeTab, setActiveTab] = useState('fees');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [depositToDelete, setDepositToDelete] = useState<string | null>(null);
 
   const refreshFeeData = () => {
     const data = getFeeEntryByStudentId(studentId);
@@ -126,6 +137,24 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
     }
   };
 
+  const handleRemoveDeposit = (depositId: string) => {
+    setDepositToDelete(depositId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteDeposit = () => {
+    if (!feeData || !depositToDelete) return;
+
+    const updatedDeposits = feeData.deposits.filter(deposit => deposit.id !== depositToDelete);
+    
+    updateFeeEntry(studentId, { deposits: updatedDeposits });
+    toast.success('Deposit removed successfully');
+    refreshFeeData();
+    
+    setDeleteConfirmOpen(false);
+    setDepositToDelete(null);
+  };
+
   const handleFeeInputChange = (field: keyof FeeEntry, value: number) => {
     if (!feeData) return;
     
@@ -177,248 +206,279 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
   if (!feeData) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full md:max-w-[800px] sm:max-w-full overflow-y-auto">
-        <SheetHeader className="mb-4">
-          <SheetTitle>Fees Statement</SheetTitle>
-          <SheetDescription>
-            Student: {studentName} (ID: {studentId})
-          </SheetDescription>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full md:max-w-[800px] sm:max-w-full overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle>Fees Statement</SheetTitle>
+            <SheetDescription>
+              Student: {studentName} (ID: {studentId})
+            </SheetDescription>
+          </SheetHeader>
 
-        <Tabs defaultValue="fees" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="fees">Fee Details</TabsTrigger>
-            <TabsTrigger value="deposits">Deposits</TabsTrigger>
-            <TabsTrigger value="summary">Summary</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="fees" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="fees">Fee Details</TabsTrigger>
+              <TabsTrigger value="deposits">Deposits</TabsTrigger>
+              <TabsTrigger value="summary">Summary</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="fees" className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">One-Time Fees</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="registrationFee">Registration Fee</Label>
-                  <Input
-                    id="registrationFee"
-                    type="number"
-                    min="0"
-                    value={feeData.registrationFee}
-                    onChange={(e) => handleFeeInputChange('registrationFee', Number(e.target.value))}
-                  />
+            <TabsContent value="fees" className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">One-Time Fees</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="registrationFee">Registration Fee</Label>
+                    <Input
+                      id="registrationFee"
+                      type="number"
+                      min="0"
+                      value={feeData.registrationFee}
+                      onChange={(e) => handleFeeInputChange('registrationFee', Number(e.target.value))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admissionFee">Admission Fee</Label>
+                    <Input
+                      id="admissionFee"
+                      type="number"
+                      min="0"
+                      value={feeData.admissionFee}
+                      onChange={(e) => handleFeeInputChange('admissionFee', Number(e.target.value))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="annualCharges">Annual Charges</Label>
+                    <Input
+                      id="annualCharges"
+                      type="number"
+                      min="0"
+                      value={feeData.annualCharges}
+                      onChange={(e) => handleFeeInputChange('annualCharges', Number(e.target.value))}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admissionFee">Admission Fee</Label>
-                  <Input
-                    id="admissionFee"
-                    type="number"
-                    min="0"
-                    value={feeData.admissionFee}
-                    onChange={(e) => handleFeeInputChange('admissionFee', Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="annualCharges">Annual Charges</Label>
-                  <Input
-                    id="annualCharges"
-                    type="number"
-                    min="0"
-                    value={feeData.annualCharges}
-                    onChange={(e) => handleFeeInputChange('annualCharges', Number(e.target.value))}
-                  />
-                </div>
-              </div>
-              <Button onClick={handleSaveOneTimeFees}>
-                <Save className="h-4 w-4 mr-2" />
-                Save One-Time Fees
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Monthly Fees</h3>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="month"
-                    className="w-40"
-                    value={newMonthlyFee.month}
-                    onChange={(e) => setNewMonthlyFee({...newMonthlyFee, month: e.target.value})}
-                  />
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="Amount"
-                    className="w-32"
-                    value={newMonthlyFee.amount || ''}
-                    onChange={(e) => setNewMonthlyFee({...newMonthlyFee, amount: Number(e.target.value)})}
-                  />
-                  <Button size="sm" onClick={handleAddMonthlyFee}>
-                    <PlusCircle className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
-                </div>
+                <Button onClick={handleSaveOneTimeFees}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save One-Time Fees
+                </Button>
               </div>
 
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Month</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {feeData.monthlyFees.length === 0 ? (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Monthly Fees</h3>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="month"
+                      className="w-40"
+                      value={newMonthlyFee.month}
+                      onChange={(e) => setNewMonthlyFee({...newMonthlyFee, month: e.target.value})}
+                    />
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Amount"
+                      className="w-32"
+                      value={newMonthlyFee.amount || ''}
+                      onChange={(e) => setNewMonthlyFee({...newMonthlyFee, amount: Number(e.target.value)})}
+                    />
+                    <Button size="sm" onClick={handleAddMonthlyFee}>
+                      <PlusCircle className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
-                          No monthly fees added yet
-                        </TableCell>
+                        <TableHead>Month</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
                       </TableRow>
-                    ) : (
-                      feeData.monthlyFees
-                        .sort((a, b) => a.month.localeCompare(b.month))
-                        .map((fee) => (
-                          <TableRow key={fee.id}>
-                            <TableCell>{formatMonthName(fee.month)}</TableCell>
-                            <TableCell className="text-right">${fee.amount.toFixed(2)}</TableCell>
-                            <TableCell className="text-center">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => toggleMonthlyFeePaid(fee.id)}
-                                className={fee.paid ? "text-green-500" : "text-red-500"}
-                              >
-                                {fee.paid ? <CheckCircle className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                    )}
-                    <TableRow className="bg-muted/50">
-                      <TableCell className="font-medium">Total Monthly Fees</TableCell>
-                      <TableCell className="text-right font-medium">${totalMonthlyFees.toFixed(2)}</TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="deposits" className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Deposits</h3>
-                <div className="flex flex-col md:flex-row gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="Amount"
-                    className="w-full md:w-32"
-                    value={newDeposit.amount || ''}
-                    onChange={(e) => setNewDeposit({...newDeposit, amount: Number(e.target.value)})}
-                  />
-                  <Input
-                    type="date"
-                    className="w-full md:w-40"
-                    value={newDeposit.date}
-                    onChange={(e) => setNewDeposit({...newDeposit, date: e.target.value})}
-                  />
-                  <Input
-                    placeholder="Remarks"
-                    className="w-full md:w-40"
-                    value={newDeposit.remarks}
-                    onChange={(e) => setNewDeposit({...newDeposit, remarks: e.target.value})}
-                  />
-                  <Button size="sm" onClick={handleAddDeposit}>
-                    <PlusCircle className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
+                    </TableHeader>
+                    <TableBody>
+                      {feeData.monthlyFees.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
+                            No monthly fees added yet
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        feeData.monthlyFees
+                          .sort((a, b) => a.month.localeCompare(b.month))
+                          .map((fee) => (
+                            <TableRow key={fee.id}>
+                              <TableCell>{formatMonthName(fee.month)}</TableCell>
+                              <TableCell className="text-right">${fee.amount.toFixed(2)}</TableCell>
+                              <TableCell className="text-center">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => toggleMonthlyFeePaid(fee.id)}
+                                  className={fee.paid ? "text-green-500" : "text-red-500"}
+                                >
+                                  {fee.paid ? <CheckCircle className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      )}
+                      <TableRow className="bg-muted/50">
+                        <TableCell className="font-medium">Total Monthly Fees</TableCell>
+                        <TableCell className="text-right font-medium">${totalMonthlyFees.toFixed(2)}</TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
+            </TabsContent>
 
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Remarks</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {feeData.deposits.length === 0 ? (
+            <TabsContent value="deposits" className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Deposits</h3>
+                  <div className="flex flex-col md:flex-row gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Amount"
+                      className="w-full md:w-32"
+                      value={newDeposit.amount || ''}
+                      onChange={(e) => setNewDeposit({...newDeposit, amount: Number(e.target.value)})}
+                    />
+                    <Input
+                      type="date"
+                      className="w-full md:w-40"
+                      value={newDeposit.date}
+                      onChange={(e) => setNewDeposit({...newDeposit, date: e.target.value})}
+                    />
+                    <Input
+                      placeholder="Remarks"
+                      className="w-full md:w-40"
+                      value={newDeposit.remarks}
+                      onChange={(e) => setNewDeposit({...newDeposit, remarks: e.target.value})}
+                    />
+                    <Button size="sm" onClick={handleAddDeposit}>
+                      <PlusCircle className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
-                          No deposits recorded yet
-                        </TableCell>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Remarks</TableHead>
+                        <TableHead className="w-20">Actions</TableHead>
                       </TableRow>
-                    ) : (
-                      feeData.deposits
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                        .map((deposit) => (
-                          <TableRow key={deposit.id}>
-                            <TableCell>
-                              {format(new Date(deposit.date), 'MMM d, yyyy')}
-                            </TableCell>
-                            <TableCell className="text-right">${deposit.amount.toFixed(2)}</TableCell>
-                            <TableCell>{deposit.remarks || '-'}</TableCell>
-                          </TableRow>
-                        ))
-                    )}
-                    <TableRow className="bg-muted/50">
-                      <TableCell className="font-medium">Total Deposits</TableCell>
-                      <TableCell className="text-right font-medium">${totalDeposits.toFixed(2)}</TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {feeData.deposits.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                            No deposits recorded yet
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        feeData.deposits
+                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                          .map((deposit) => (
+                            <TableRow key={deposit.id}>
+                              <TableCell>
+                                {format(new Date(deposit.date), 'MMM d, yyyy')}
+                              </TableCell>
+                              <TableCell className="text-right">${deposit.amount.toFixed(2)}</TableCell>
+                              <TableCell>{deposit.remarks || '-'}</TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="text-destructive hover:text-destructive-foreground"
+                                  onClick={() => handleRemoveDeposit(deposit.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      )}
+                      <TableRow className="bg-muted/50">
+                        <TableCell className="font-medium">Total Deposits</TableCell>
+                        <TableCell className="text-right font-medium">${totalDeposits.toFixed(2)}</TableCell>
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="summary" className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Fee Summary</h3>
-              <div className="border rounded-md p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="font-medium">Registration Fee:</div>
-                  <div className="text-right">${feeData.registrationFee.toFixed(2)}</div>
-                  
-                  <div className="font-medium">Admission Fee:</div>
-                  <div className="text-right">${feeData.admissionFee.toFixed(2)}</div>
-                  
-                  <div className="font-medium">Annual Charges:</div>
-                  <div className="text-right">${feeData.annualCharges.toFixed(2)}</div>
-                  
-                  <div className="font-medium">Total One-Time Fees:</div>
-                  <div className="text-right">${totalOneTimeFees.toFixed(2)}</div>
-                  
-                  <div className="font-medium pt-2 border-t">Total Monthly Fees:</div>
-                  <div className="text-right pt-2 border-t">${totalMonthlyFees.toFixed(2)}</div>
-                  
-                  <div className="font-medium text-lg pt-2 border-t">Grand Total:</div>
-                  <div className="text-right text-lg font-bold pt-2 border-t">${grandTotal.toFixed(2)}</div>
-                  
-                  <div className="font-medium pt-2 border-t">Total Deposits:</div>
-                  <div className="text-right pt-2 border-t">${totalDeposits.toFixed(2)}</div>
-                  
-                  <div className="font-medium text-lg pt-2 border-t">Dues:</div>
-                  <div className={`text-right text-lg font-bold pt-2 border-t ${duesAmount > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                    ${duesAmount.toFixed(2)}
+            <TabsContent value="summary" className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Fee Summary</h3>
+                <div className="border rounded-md p-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="font-medium">Registration Fee:</div>
+                    <div className="text-right">${feeData.registrationFee.toFixed(2)}</div>
+                    
+                    <div className="font-medium">Admission Fee:</div>
+                    <div className="text-right">${feeData.admissionFee.toFixed(2)}</div>
+                    
+                    <div className="font-medium">Annual Charges:</div>
+                    <div className="text-right">${feeData.annualCharges.toFixed(2)}</div>
+                    
+                    <div className="font-medium">Total One-Time Fees:</div>
+                    <div className="text-right">${totalOneTimeFees.toFixed(2)}</div>
+                    
+                    <div className="font-medium pt-2 border-t">Total Monthly Fees:</div>
+                    <div className="text-right pt-2 border-t">${totalMonthlyFees.toFixed(2)}</div>
+                    
+                    <div className="font-medium text-lg pt-2 border-t">Grand Total:</div>
+                    <div className="text-right text-lg font-bold pt-2 border-t">${grandTotal.toFixed(2)}</div>
+                    
+                    <div className="font-medium pt-2 border-t">Total Deposits:</div>
+                    <div className="text-right pt-2 border-t">${totalDeposits.toFixed(2)}</div>
+                    
+                    <div className="font-medium text-lg pt-2 border-t">Dues:</div>
+                    <div className={`text-right text-lg font-bold pt-2 border-t ${duesAmount > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                      ${duesAmount.toFixed(2)}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
 
-        <SheetFooter className="mt-6">
-          <Button onClick={() => onOpenChange(false)}>Close</Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          <SheetFooter className="mt-6">
+            <Button onClick={() => onOpenChange(false)}>Close</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Deposit</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this deposit? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDepositToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDeposit} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
