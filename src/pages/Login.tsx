@@ -1,8 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,45 +19,18 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleLoginSuccess = (credentialResponse: any) => {
-    try {
-      const decoded = jwtDecode(credentialResponse.credential) as any;
-      
-      login({
-        email: decoded.email,
-        name: decoded.name,
-        picture: decoded.picture,
-        sub: decoded.sub
-      });
-      
-      if (isAdmin(password)) {
-        setAdminStatus(true);
-        toast.success(`Welcome back, ${decoded.name}!`);
-        navigate("/");
-      } else {
-        setLoginError("Incorrect administrator password. Please try again.");
-        toast.error("Incorrect administrator password. Please try again.");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      toast.error("Login failed. Please try again.");
-    }
-  };
-
-  // Handle password-only submission
+  // Handle password submission
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (isAdmin(password)) {
-      // Create a minimal user object if not authenticated via Google
-      if (!isAuthenticated) {
-        login({
-          email: "admin@littlepalms.edu",
-          name: "Administrator",
-          picture: "/logo-placeholder.png",
-          sub: "password-auth"
-        });
-      }
+      // Create a minimal user object
+      login({
+        email: "admin@littlepalms.edu",
+        name: "Administrator",
+        picture: "/logo-placeholder.png",
+        sub: "password-auth"
+      });
       
       setAdminStatus(true);
       toast.success("Welcome back, Administrator!");
@@ -69,14 +40,6 @@ const Login = () => {
       toast.error("Incorrect administrator password. Please try again.");
     }
   };
-
-  // Display a reminder about setting up the Google Client ID
-  useEffect(() => {
-    toast.info(
-      "Note: You need to replace 'YOUR_GOOGLE_CLIENT_ID' in App.tsx with your actual Google OAuth Client ID", 
-      { duration: 8000 }
-    );
-  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
@@ -118,26 +81,8 @@ const Login = () => {
             </div>
             
             <Button type="submit" className="w-full">
-              Sign In with Password
+              Sign In
             </Button>
-            
-            <div className="relative flex justify-center">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative px-4 text-sm font-medium text-gray-500 bg-white">Or continue with</div>
-            </div>
-            
-            <div className="flex justify-center">
-              <GoogleLogin
-                onSuccess={handleLoginSuccess}
-                onError={() => {
-                  console.log("Login Failed");
-                  toast.error("Login failed. Please try again.");
-                }}
-                useOneTap
-              />
-            </div>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-gray-500">
