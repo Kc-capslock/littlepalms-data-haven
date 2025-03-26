@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LogOut, Search, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface NavbarProps {
   onSearch?: (query: string) => void;
 }
 
 const Navbar = ({ onSearch }: NavbarProps) => {
+  const navigate = useNavigate();
   const { user, logout, isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -18,6 +20,11 @@ const Navbar = ({ onSearch }: NavbarProps) => {
     if (onSearch) {
       onSearch(searchQuery);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
 
   return (
@@ -59,7 +66,7 @@ const Navbar = ({ onSearch }: NavbarProps) => {
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={logout}>
+              <Button variant="ghost" size="icon" onClick={handleLogout}>
                 <LogOut className="h-5 w-5" />
                 <span className="sr-only">Logout</span>
               </Button>
