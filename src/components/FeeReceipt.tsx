@@ -1,7 +1,7 @@
 
 import React, { useRef } from 'react';
 import { format } from 'date-fns';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FeeEntry, Student } from '@/utils/studentData';
 
@@ -150,12 +150,71 @@ const FeeReceipt: React.FC<FeeReceiptProps> = ({
       }
     }
   };
+
+  const handleDownload = () => {
+    const receipt = receiptRef.current;
+    if (!receipt) return;
+
+    // Create a new window for printing
+    const printWindow = window.open('', '', 'width=1000,height=900');
+    if (!printWindow) {
+      alert('Please allow popups to download the receipt');
+      return;
+    }
+
+    // Write the receipt content to the new window
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Fee Receipt - ${student.name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th, td { border: 1px solid #000; padding: 8px; }
+            th { text-align: left; }
+            .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+            .logo { text-align: right; }
+            .logo img { max-width: 150px; }
+            .title { text-align: center; font-weight: bold; margin: 10px 0; }
+            .school-info { margin-bottom: 10px; }
+            .signature { text-align: right; margin-top: 30px; }
+            .payment-method { margin-top: 20px; }
+            @media print {
+              @page { size: auto; margin: 10mm; }
+            }
+          </style>
+        </head>
+        <body>
+          ${receipt.innerHTML}
+          <script>
+            // Automatically trigger the save dialog
+            document.addEventListener('DOMContentLoaded', function() {
+              setTimeout(function() {
+                window.print();
+                setTimeout(function() {
+                  window.close();
+                }, 100);
+              }, 500);
+            });
+          </script>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+  };
   
   return (
     <div className="mt-4">
-      <Button onClick={handlePrint} className="mb-4 w-full">
-        <Printer className="h-4 w-4 mr-2" /> Print Receipt
-      </Button>
+      <div className="flex gap-2 mb-4">
+        <Button onClick={handlePrint} className="w-full">
+          <Printer className="h-4 w-4 mr-2" /> Print Receipt
+        </Button>
+        <Button onClick={handleDownload} variant="outline" className="w-full">
+          <Download className="h-4 w-4 mr-2" /> Download PDF
+        </Button>
+      </div>
       
       <div ref={receiptRef} className="border p-4 rounded-md bg-white text-black">
         <div className="header flex justify-between items-center mb-4">
