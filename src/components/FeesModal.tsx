@@ -37,9 +37,11 @@ import {
   calculateTotalDeposits, 
   calculateDues,
   initializeFeeEntry,
-  generateId
+  generateId,
+  getStudentById
 } from '@/utils/studentData';
 import { CalendarIcon, CheckCircle, XCircle, PlusCircle, Receipt, Save, Trash2 } from 'lucide-react';
+import FeeReceipt from './FeeReceipt';
 
 interface FeesModalProps {
   studentId: string;
@@ -50,6 +52,7 @@ interface FeesModalProps {
 
 const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProps) => {
   const [feeData, setFeeData] = useState<FeeEntry | null>(null);
+  const [student, setStudent] = useState<any>(null);
   const [newMonthlyFee, setNewMonthlyFee] = useState({
     month: format(new Date(), 'yyyy-MM'),
     amount: 0
@@ -64,6 +67,10 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
   const [depositToDelete, setDepositToDelete] = useState<string | null>(null);
   const [monthlyFeeToDelete, setMonthlyFeeToDelete] = useState<string | null>(null);
   const [deleteMonthlyFeeConfirmOpen, setDeleteMonthlyFeeConfirmOpen] = useState(false);
+  const [selectedDeposit, setSelectedDeposit] = useState<Deposit | null>(null);
+  const [sessionPeriod, setSessionPeriod] = useState('01-04-2024 - 31-03-2025');
+  const [feePeriod, setFeePeriod] = useState('01-04-2024 - 30-04-2024');
+  const [numberOfMonths, setNumberOfMonths] = useState('One (1)');
 
   const refreshFeeData = () => {
     const data = getFeeEntryByStudentId(studentId);
@@ -73,6 +80,9 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
       const newData = initializeFeeEntry(studentId);
       setFeeData(newData);
     }
+    
+    const studentData = getStudentById(studentId);
+    setStudent(studentData);
   };
 
   useEffect(() => {
@@ -224,6 +234,11 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
     refreshFeeData();
   };
 
+  const handleSelectDeposit = (deposit: Deposit) => {
+    setSelectedDeposit(deposit);
+    setActiveTab('receipt');
+  };
+
   if (!feeData) return null;
 
   return (
@@ -242,6 +257,7 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
               <TabsTrigger value="fees">Fee Details</TabsTrigger>
               <TabsTrigger value="deposits">Deposits</TabsTrigger>
               <TabsTrigger value="summary">Summary</TabsTrigger>
+              {selectedDeposit && <TabsTrigger value="receipt">Receipt</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="fees" className="space-y-6">
@@ -408,7 +424,7 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
                         <TableHead>Date</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                         <TableHead>Remarks</TableHead>
-                        <TableHead className="w-20">Actions</TableHead>
+                        <TableHead className="w-36">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -429,14 +445,24 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
                               <TableCell className="text-right">${deposit.amount.toFixed(2)}</TableCell>
                               <TableCell>{deposit.remarks || '-'}</TableCell>
                               <TableCell>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="text-destructive hover:text-destructive-foreground"
-                                  onClick={() => handleRemoveDeposit(deposit.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex space-x-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleSelectDeposit(deposit)}
+                                  >
+                                    <Receipt className="h-4 w-4 mr-1" />
+                                    Receipt
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="text-destructive hover:text-destructive-foreground"
+                                    onClick={() => handleRemoveDeposit(deposit.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -485,7 +511,66 @@ const FeesModal = ({ studentId, studentName, open, onOpenChange }: FeesModalProp
                     </div>
                   </div>
                 </div>
+
+                {/* Receipt Configuration Fields */}
+                <div className="border rounded-md p-4 space-y-4 mt-6">
+                  <h4 className="font-medium text-base">Receipt Configuration</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="sessionPeriod">Session Period</Label>
+                      <Input
+                        id="sessionPeriod"
+                        value={sessionPeriod}
+                        onChange={(e) => setSessionPeriod(e.target.value)}
+                        placeholder="e.g., 01-04-2024 - 31-03-2025"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="feePeriod">Fee Period</Label>
+                      <Input
+                        id="feePeriod"
+                        value={feePeriod}
+                        onChange={(e) => setFeePeriod(e.target.value)}
+                        placeholder="e.g., 01-04-2024 - 30-04-2024"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="numberOfMonths">Number of Months</Label>
+                      <Input
+                        id="numberOfMonths"
+                        value={numberOfMonths}
+                        onChange={(e) => setNumberOfMonths(e.target.value)}
+                        placeholder="e.g., One (1)"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      To print a receipt, go to the Deposits tab and click the Receipt button next to a deposit.
+                    </p>
+                  </div>
+                </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="receipt" className="space-y-6">
+              {selectedDeposit && student ? (
+                <FeeReceipt 
+                  student={student}
+                  feeData={feeData}
+                  selectedDeposit={{
+                    amount: selectedDeposit.amount,
+                    date: selectedDeposit.date
+                  }}
+                  sessionPeriod={sessionPeriod}
+                  feePeriod={feePeriod}
+                  numberOfMonths={numberOfMonths}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Please select a deposit to generate a receipt.
+                </div>
+              )}
             </TabsContent>
           </Tabs>
 
